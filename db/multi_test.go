@@ -28,7 +28,7 @@ func simple_change_by1(db Storage, name UserId) error {
 		return err
 	}
 
-	return db.Transaction().Change(user.Name, 1, user.Purse)
+	return db.Transaction().Change(user.Id, 1, user.Purse)
 }
 
 func spin_change_by1(db Storage, name UserId) error {
@@ -38,7 +38,7 @@ func spin_change_by1(db Storage, name UserId) error {
 			return err
 		}
 
-		if err := db.Transaction().Change(user.Name, 1, user.Purse); err == nil {
+		if err := db.Transaction().Change(user.Id, 1, user.Purse); err == nil {
 			break
 		}
 	}
@@ -88,9 +88,9 @@ func run_mt_test(
 
 		wait.Wait()
 
-		u1, err := db.Load(u.Name)
+		u1, err := db.Load(u.Id)
 		if err != nil {
-			t.Fatal("Load failed for", u.Name, err)
+			t.Fatal("Load failed for", u.Id, err)
 		}
 
 		if finished(u1, iteration) {
@@ -109,73 +109,77 @@ func run_mt_test(
 }
 
 func Test_STSaveShouldNotWorkInMTEnv(t *testing.T) {
-	u := &User{Name: "User1", Purse: 0}
+	u := &User{Id: 1, Purse: 0}
 
 	run_mt_test(t, NewInMemoryStorage(), threads, steps, u,
 		func(u *User, iter int) bool {
 			return u.Purse > 0 && u.Purse != Purse(iter * threads * steps)
 		},
 		func (db Storage, i int) error {
-			return simple_inc(db, u.Name)
+			return simple_inc(db, u.Id)
 		})
 }
 
 func Test_STSimpleChangeShouldNotWorkInMTEnv(t *testing.T) {
-	u := &User{Name: "User1", Purse: 0}
+	u := &User{Id: 1, Purse: 0}
 
 	run_mt_test(t, NewInMemoryStorage(), threads, steps, u,
 		func(u *User, iter int) bool {
 			return u.Purse > 0 && u.Purse != Purse(iter * threads * steps)
 		},
 		func (db Storage, i int) error {
-			return simple_change_by1(db, u.Name)
+			return simple_change_by1(db, u.Id)
 		})
 }
 
 func Test_STSpinnedChangeShouldNotWorkInMTEnv(t *testing.T) {
-	u := &User{Name: "User1", Purse: 0}
+	u := &User{Id: 1, Purse: 0}
 
 	run_mt_test(t, NewInMemoryStorage(), threads, steps, u,
 		func(u *User, iter int) bool {
 			return u.Purse > 0 && u.Purse != Purse(iter * threads * steps)
 		},
 		func (db Storage, i int) error {
-			return spin_change_by1(db, u.Name)
+			return spin_change_by1(db, u.Id)
 		})
 }
 
 func Test_MTSaveShouldNotWorkInMTEnv(t *testing.T) {
-	u := &User{Name: "User1", Purse: 0}
+	u := &User{Id: 1, Purse: 0}
 
 	run_mt_test(t, NewInMemoryMTSafeStorage(), threads, steps, u,
 		func(u *User, iter int) bool {
 			return u.Purse > 0 && u.Purse != Purse(iter * threads * steps)
 		},
 		func (db Storage, i int) error {
-			return simple_inc(db, u.Name)
+			return simple_inc(db, u.Id)
 		})
 }
 
 func Test_MTSimpleChangeShouldNotWorkInMTEnv(t *testing.T) {
-	u := &User{Name: "User1", Purse: 0}
+	u := &User{Id: 1, Purse: 0}
 
 	run_mt_test(t, NewInMemoryMTSafeStorage(), threads, steps, u,
 		func(u *User, iter int) bool {
 			return u.Purse > 0 && u.Purse != Purse(iter * threads * steps)
 		},
 		func (db Storage, i int) error {
-			return simple_change_by1(db, u.Name)
+			return simple_change_by1(db, u.Id)
 		})
 }
 
 func Test_MTSpinnedChangeShouldWorkInMTEnv(t *testing.T) {
-	u := &User{Name: "User1", Purse: 0}
+	u := &User{Id: 1, Purse: 0}
 
 	run_mt_test(t, NewInMemoryMTSafeStorage(), threads, steps, u,
 		func(u *User, iter int) bool {
 			return u.Purse > 0 && u.Purse == Purse(iter * threads * steps)
 		},
 		func (db Storage, i int) error {
-			return spin_change_by1(db, u.Name)
+			return spin_change_by1(db, u.Id)
 		})
+}
+
+func Test_MTEnvDeadlocksTest(t *testing.T) {
+	// TODO
 }

@@ -12,24 +12,24 @@ func NewInMemoryStorage() Storage {
 	}
 }
 
-func (s *inMemory) Load(name UserId) (*User, error) {
-	purse, ok := s.data[name]
+func (s *inMemory) Load(id UserId) (*User, error) {
+	purse, ok := s.data[id]
 	if !ok {
-		return nil, fmt.Errorf("There is no such user %s", name)
+		return nil, fmt.Errorf("There is no such user %d", id)
 	}
 
 	return &User{
-		Name: name,
+		Id: id,
 		Purse: purse,
 	}, nil
 }
 
 func (s *inMemory) Save(user *User) error {
-	s.data[user.Name] = user.Purse
+	s.data[user.Id] = user.Purse
 	return nil
 }
 
-func (s *inMemory) List() map[UserId]Purse {
+func (s *inMemory) List() View {
 	copy := map[UserId]Purse{}
 
 	for name, purse := range s.data {
@@ -45,23 +45,23 @@ func (s *inMemory) Transaction() Tx {
 
 // Single threaded implementation has atomicity guarantee by definition
 func (s *inMemory) PutIfAbsent(user *User) error {
-	if _, ok := s.data[user.Name]; ok {
-		return fmt.Errorf("Can't put user %s into the storage: already present", user.Name)
+	if _, ok := s.data[user.Id]; ok {
+		return fmt.Errorf("Can't put user %d into the storage: already present", user.Id)
 	}
 
 	return s.Save(user)
 }
 
 // Single threaded implementation has atomicity guarantee by definition
-func (s *inMemory) Change(name UserId, val int64, expected Purse) error {
-	user, err := s.Load(name)
+func (s *inMemory) Change(id UserId, val int64, expected Purse) error {
+	user, err := s.Load(id)
 	if err != nil {
 		return err
 	}
 
 	if user.Purse != expected {
-		return fmt.Errorf("User balance have been changed since. user.Purse: %d != %d",
-			user.Purse, expected)
+		return fmt.Errorf("User balance have been changed since. %v != %d",
+			user, expected)
 	}
 
 	user.Change(val)

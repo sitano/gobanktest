@@ -2,21 +2,22 @@ package db
 
 import "strconv"
 
-type UserId string
+type UserId int64
 type Purse int64
+type View map[UserId]Purse
 
 type User struct {
-	Name UserId
+	Id UserId
 	Purse Purse
 }
 
 type Storage interface {
-	Load(name UserId) (*User, error)
+	Load(id UserId) (*User, error)
 
 	// Just to show this would not work for our scenario
 	Save(user *User) error
 
-	List() map[UserId]Purse
+	List() View
 
 	// Separate simple transaction abstraction.
 	// Need ACID guarantees to perform transactional changes to Purses.
@@ -39,11 +40,11 @@ type Tx interface {
 	// I provide CAS op like here to show how to
 	// organize purses changes using that simple
 	// basic op.
-	Change(name UserId, val int64, expected Purse) error
+	Change(id UserId, val int64, expected Purse) error
 }
 
 func Compare(u1, u2 *User) bool {
-	return u1 == u2 || (u1.Name == u2.Name && u1.Purse == u2.Purse)
+	return u1 == u2 || (u1.Id == u2.Id && u1.Purse == u2.Purse)
 }
 
 func (u *User) Change(val int64) {
@@ -51,5 +52,7 @@ func (u *User) Change(val int64) {
 }
 
 func (u *User) String() string {
-	return "User{" + string(u.Name) + ", " + strconv.FormatInt(int64(u.Purse), 10) + "}"
+	return "[User " +
+		strconv.FormatInt(int64(u.Id), 10) + ": " +
+		strconv.FormatInt(int64(u.Purse), 10) + "]"
 }
