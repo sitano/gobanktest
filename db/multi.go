@@ -31,6 +31,13 @@ func (s *inMemoryMTSafe) Save(user *User) error {
 	return s.Storage.Save(user)
 }
 
+func (s *inMemoryMTSafe) List() map[UserId]Purse {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+
+	return s.Storage.List()
+}
+
 func (s *inMemoryMTSafe) Transaction() Tx {
 	return s
 }

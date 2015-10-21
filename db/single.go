@@ -1,31 +1,42 @@
 package db
+
 import "fmt"
 
 type inMemory struct {
-	data map[UserId]*User
+	data map[UserId]Purse
 }
 
 func NewInMemoryStorage() Storage {
 	return &inMemory{
-		data: map[UserId]*User{},
+		data: map[UserId]Purse{},
 	}
 }
 
 func (s *inMemory) Load(name UserId) (*User, error) {
-	user, ok := s.data[name]
+	purse, ok := s.data[name]
 	if !ok {
 		return nil, fmt.Errorf("There is no such user %s", name)
 	}
 
 	return &User{
-		Name: user.Name,
-		Purse: user.Purse,
+		Name: name,
+		Purse: purse,
 	}, nil
 }
 
 func (s *inMemory) Save(user *User) error {
-	s.data[user.Name] = user
+	s.data[user.Name] = user.Purse
 	return nil
+}
+
+func (s *inMemory) List() map[UserId]Purse {
+	copy := map[UserId]Purse{}
+
+	for name, purse := range s.data {
+		copy[name] = purse
+	}
+
+	return copy
 }
 
 func (s *inMemory) Transaction() Tx {
@@ -53,7 +64,7 @@ func (s *inMemory) Change(name UserId, val int64, expected Purse) error {
 			user.Purse, expected)
 	}
 
-	user.Purse = Purse(int64(user.Purse) + val)
+	user.Change(val)
 
 	s.Save(user)
 

@@ -16,7 +16,10 @@ type Storage interface {
 	// Just to show this would not work for our scenario
 	Save(user *User) error
 
-	// Simple transaction abstraction hinting we need ACID guarantees
+	List() map[UserId]Purse
+
+	// Separate simple transaction abstraction.
+	// Need ACID guarantees to perform transactional changes to Purses.
 	Transaction() Tx
 }
 
@@ -28,14 +31,23 @@ type Tx interface {
 	// it has verified balance (the balance did not change
 	// since last read).
 	//
-	// It is possible to put this peace of business
-	// logic here into kind of storage procedure, but
-	// i choosed not to go this way.
+	// Available options here:
+	// - put whole transaction logic into db
+	// - make start tx/commit acid with locks
+	// - single cas operation
+	//
+	// I provide CAS op like here to show how to
+	// organize purses changes using that simple
+	// basic op.
 	Change(name UserId, val int64, expected Purse) error
 }
 
 func Compare(u1, u2 *User) bool {
 	return u1 == u2 || (u1.Name == u2.Name && u1.Purse == u2.Purse)
+}
+
+func (u *User) Change(val int64) {
+	u.Purse = Purse(int64(u.Purse) + val)
 }
 
 func (u *User) String() string {
